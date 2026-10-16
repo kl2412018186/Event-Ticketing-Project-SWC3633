@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EventTicketing - Event Details</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            min-height: 100vh;
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+        }
+        .navbar-glass {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            color: #ffffff;
+            padding: 40px;
+        }
+        .btn-gradient {
+            background: linear-gradient(135deg, #00c6ff, #0072ff);
+            border: none;
+            border-radius: 8px;
+            padding: 12px 24px;
+            font-weight: 600;
+            color: white;
+            transition: all 0.3s ease;
+        }
+        .btn-gradient:hover {
+            background: linear-gradient(135deg, #0072ff, #00c6ff);
+            box-shadow: 0 4px 15px rgba(0, 114, 255, 0.4);
+            color: white;
+        }
+        .btn-outline-custom {
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: #fff;
+            background: transparent;
+            border-radius: 8px;
+            padding: 10px 20px;
+        }
+        .btn-outline-custom:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border-color: #fff;
+        }
+        .logo-text {
+            font-size: 20px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #00c6ff, #0072ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .info-label {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+    </style>
+</head>
+<body>
+
+   
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-glass mb-5 py-3">
+        <div class="container">
+            <a class="navbar-brand logo-text" href="dashboard.html">🎟️ EventTicketing</a>
+            <div>
+                <a href="dashboard.html" class="btn btn-outline-custom btn-sm me-2">Dashboard</a>
+                <a href="history.html" class="btn btn-outline-custom btn-sm me-2">Booking History</a>
+                <button class="btn btn-outline-custom btn-sm" onclick="logout()">Logout</button>
+            </div>
+        </div>
+    </nav>
+
+
+    <div class="container mb-5" style="max-width: 700px;">
+        <div class="glass-card shadow-lg">
+            <div id="loadingBox" class="text-center py-5">
+                <div class="spinner-border text-info" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="text-white-50 mt-3">Loading event details...</p>
+            </div>
+
+            <div id="eventContent" class="d-none">
+                <h2 id="eventName" class="fw-bold text-info mb-3">Event Name</h2>
+                <hr class="border-secondary mb-4">
+
+                <div class="row mb-4">
+                    <div class="col-md-6 mb-3 mb-md-0">
+                        <span class="info-label d-block mb-1">Date & Time</span>
+                        <h5 id="eventDate" class="text-white mb-0">-</h5>
+                    </div>
+                    <div class="col-md-6">
+                        <span class="info-label d-block mb-1">Venue</span>
+                        <h5 id="eventVenue" class="text-white mb-0">-</h5>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <span class="info-label d-block mb-1">Description</span>
+                    <p id="eventDesc" class="text-white-50 fs-6">-</p>
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-md-6 mb-3 mb-md-0">
+                        <span class="info-label d-block mb-1">Ticket Price</span>
+                        <h4 id="eventPrice" class="text-success fw-bold mb-0">RM 0.00</h4>
+                    </div>
+                    <div class="col-md-6">
+                        <span class="info-label d-block mb-1">Available Tickets</span>
+                        <h4 id="eventStock" class="text-warning fw-bold mb-0">0</h4>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mt-5 pt-3 border-top border-secondary">
+                    <a href="dashboard.html" class="btn btn-outline-custom">Back to Dashboard</a>
+                    <button id="proceedBookBtn" class="btn btn-gradient">Proceed to Book</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+  
+    <script>
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = 'login.html';
+        }
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const eventId = urlParams.get('id');
+
+        if (!eventId) {
+            alert("No event selected!");
+            window.location.href = 'dashboard.html';
+        } else {
+            fetchEventDetails(eventId);
+        }
+
+        async function fetchEventDetails(id) {
+            const loadingBox = document.getElementById('loadingBox');
+            const eventContent = document.getElementById('eventContent');
+
+            try {
+                const response = await fetch(`http://localhost/EventTicketing/api/index.php/events/${id}`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const result = await response.json();
+                console.log("Event Details Response:", result);
+
+                if (response.ok && result.success) {
+                    const event = result.data;
+                    
+                    document.getElementById('eventName').textContent = event.event_name || 'Untitled Event';
+                    document.getElementById('eventDate').textContent = event.event_date || 'TBA';
+                    document.getElementById('eventVenue').textContent = event.venue_name || event.location || 'TBA';
+                    document.getElementById('eventDesc').textContent = event.description || 'No description provided.';
+                    document.getElementById('eventPrice').textContent = `RM ${event.ticket_price || '0.00'}`;
+                    document.getElementById('eventStock').textContent = event.available_tickets || '0';
+
+              
+                    document.getElementById('proceedBookBtn').onclick = function() {
+                        window.location.href = `book.html?id=${id}`;
+                    };
+
+                    loadingBox.classList.add('d-none');
+                    eventContent.classList.remove('d-none');
+                } else {
+                    loadingBox.innerHTML = `<p class="text-danger">Failed to load event information.</p>`;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                loadingBox.innerHTML = `<p class="text-danger">Error connecting to server.</p>`;
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            window.location.href = 'login.html';
+        }
+    </script>
+</body>
+</html>

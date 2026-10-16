@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EventTicketing - Staff Operations Portal</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            min-height: 100vh;
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+        }
+        .navbar-glass {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            color: #ffffff;
+            padding: 30px;
+        }
+        .table-custom {
+            color: #ffffff;
+            background: transparent;
+        }
+        .table-custom th, .table-custom td {
+            background: transparent !important;
+            color: #ffffff;
+            border-color: rgba(255, 255, 255, 0.1);
+            vertical-align: middle;
+        }
+        .logo-text {
+            font-size: 20px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #43e97b, #38f9d7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .form-control-custom {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            border-radius: 8px;
+            padding: 10px;
+        }
+        .form-control-custom:focus {
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            border-color: #38f9d7;
+            box-shadow: none;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-glass mb-4 py-3">
+        <div class="container">
+            <a class="navbar-brand logo-text" href="staff_dashboard.html">STAFF Operations Portal</a>
+            <div>
+                <button class="btn btn-danger btn-sm" onclick="localStorage.clear(); window.location.href='login.html';">Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <div class="container mb-5">
+        <h2 class="mb-4 fw-bold">Ticket Verification & Booking Logs</h2>
+
+        <!-- Section: Booking Verification Table -->
+        <div class="card glass-card mb-5">
+            <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                <h4 class="text-success mb-0">Customer Booking Records</h4>
+                <input type="text" id="searchStaffInput" class="form-control form-control-custom form-control-sm w-auto" placeholder="Search booking...">
+            </div>
+            <div class="table-responsive">
+                <table class="table table-custom align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Booking ID</th>
+                            <th>Customer Name</th>
+                            <th>Event Title</th>
+                            <th>Tickets</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="staffBookingList">
+                        <tr>
+                            <td colspan="5" class="text-center py-4 text-white-50">Loading booking records...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const token = localStorage.getItem('token') || '';
+
+        async function fetchStaffBookings() {
+            const tableBody = document.getElementById('staffBookingList');
+            try {
+                const response = await fetch('http://localhost/EventTicketing/api/index.php/bookings', {
+                    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }
+                });
+                const data = await response.json();
+                let bookings = Array.isArray(data) ? data : (data.bookings || data.data || []);
+
+                tableBody.innerHTML = '';
+                if (bookings.length === 0) {
+                    tableBody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-white-50">No bookings found.</td></tr>`;
+                    return;
+                }
+
+                bookings.forEach(b => {
+                    tableBody.innerHTML += `
+                        <tr>
+                            <td class="fw-bold">#${b.booking_id || b.id}</td>
+                            <td>${b.user_name || b.username || 'Customer'}</td>
+                            <td>${b.event_name || b.title || 'Event'}</td>
+                            <td>${b.quantity || b.tickets || 1}</td>
+                            <td><span class="badge bg-success">Confirmed</span></td>
+                        </tr>
+                    `;
+                });
+            } catch (err) {
+                tableBody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-danger">Failed to load booking logs.</td></tr>`;
+            }
+        }
+
+        fetchStaffBookings();
+    </script>
+</body>
+</html>

@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EventTicketing - User Profile</title>
+  
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            min-height: 100vh;
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+        }
+        .navbar-glass {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            color: #ffffff;
+            padding: 40px;
+        }
+        .btn-outline-custom {
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: #fff;
+            background: transparent;
+            border-radius: 8px;
+        }
+        .btn-outline-custom:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border-color: #fff;
+        }
+        .logo-text {
+            font-size: 20px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #00c6ff, #0072ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .info-label {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+    </style>
+</head>
+<body>
+
+ 
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-glass mb-5 py-3">
+        <div class="container">
+            <a class="navbar-brand logo-text" href="dashboard.html">🎟️ EventTicketing</a>
+            <div>
+                <a href="dashboard.html" class="btn btn-outline-custom btn-sm me-2">Dashboard</a>
+                <a href="history.html" class="btn btn-outline-custom btn-sm me-2">Booking History</a>
+                <button class="btn btn-outline-custom btn-sm" onclick="logout()">Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mb-5" style="max-width: 600px;">
+        <h2 class="mb-4 fw-bold">My Profile</h2>
+
+        <div class="card glass-card shadow-lg">
+            <div id="profileContent">
+                <div class="text-center mb-4">
+                    <div class="display-4 mb-2">👤</div>
+                    <h3 id="userName" class="fw-bold text-info">Loading...</h3>
+                    <span id="userRole" class="badge bg-info text-dark text-uppercase px-3 py-2 mt-1">CUSTOMER</span>
+                </div>
+
+                <hr class="border-secondary mb-4">
+
+                <div class="mb-3">
+                    <span class="info-label d-block mb-1">Email Address</span>
+                    <h5 id="userEmail" class="text-white mb-0">Loading...</h5>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mt-5 pt-3 border-top border-secondary">
+                    <a href="dashboard.html" class="btn btn-outline-custom">Back to Dashboard</a>
+                    <button class="btn btn-danger btn-sm" onclick="logout()">Logout</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        
+        const token = localStorage.getItem('token');
+        if (!token) {
+            localStorage.setItem('redirectAfterLogin', 'profile.html');
+            window.location.href = 'login.html';
+        }
+
+        function displayProfile() {
+            let userData = null;
+            try {
+                const storedUser = localStorage.getItem('user');
+                if (storedUser) {
+                    userData = JSON.parse(storedUser);
+                }
+            } catch (e) {
+                console.error("Error parsing user data:", e);
+            }
+
+            if (userData) {
+                document.getElementById('userName').textContent = userData.name || userData.username || 'User Profile';
+                document.getElementById('userEmail').textContent = userData.email || 'user@example.com';
+                document.getElementById('userRole').textContent = (userData.role || 'customer').toUpperCase();
+            } else {
+                document.getElementById('userName').textContent = 'Active Member';
+                document.getElementById('userEmail').textContent = 'user@eventticketing.com';
+                document.getElementById('userRole').textContent = 'CUSTOMER';
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = 'login.html';
+        }
+
+        displayProfile();
+    </script>
+</body>
+</html>

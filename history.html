@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EventTicketing - Booking History</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            min-height: 100vh;
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+        }
+        .navbar-glass {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            color: #ffffff;
+        }
+        .table-custom {
+            color: #ffffff;
+            background: transparent;
+        }
+        .table-custom th, .table-custom td {
+            background: transparent !important;
+            color: #ffffff;
+            border-color: rgba(255, 255, 255, 0.1);
+            vertical-align: middle;
+        }
+        .btn-outline-custom {
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: #fff;
+            background: transparent;
+            border-radius: 8px;
+        }
+        .btn-outline-custom:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border-color: #fff;
+        }
+        .logo-text {
+            font-size: 20px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #00c6ff, #0072ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-glass mb-5 py-3">
+        <div class="container">
+            <a class="navbar-brand logo-text" href="dashboard.html">🎟️ EventTicketing</a>
+            <div>
+                <a href="dashboard.html" class="btn btn-outline-custom btn-sm me-2">Dashboard</a>
+                <button class="btn btn-outline-custom btn-sm" onclick="logout()">Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <div class="container mb-5">
+        <h2 class="mb-4 fw-bold">My Booking History</h2>
+
+        <!-- Alert Box -->
+        <div id="alertBox" class="alert d-none" role="alert"></div>
+
+        <!-- History Table Card -->
+        <div class="card glass-card p-4">
+            <div class="table-responsive">
+                <table class="table table-custom align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Booking ID</th>
+                            <th>Event Name</th>
+                            <th>Quantity</th>
+                            <th>Total Price (RM)</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bookingHistoryList">
+                        <tr>
+                            <td colspan="6" class="text-center py-4 text-white-50">Loading booking history...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript for API Integration -->
+    <script>
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = 'login.html';
+        }
+
+        async function fetchBookingHistory() {
+            const tableBody = document.getElementById('bookingHistoryList');
+            const alertBox = document.getElementById('alertBox');
+
+            try {
+                const response = await fetch('http://localhost/EventTicketing/api/index.php/bookings', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const result = await response.json();
+                console.log("Bookings API Response:", result);
+
+                if (response.ok) {
+                    tableBody.innerHTML = '';
+                    
+                    let bookings = [];
+                    if (Array.isArray(result)) {
+                        bookings = result;
+                    } else if (result.data && Array.isArray(result.data)) {
+                        bookings = result.data;
+                    } else if (result.bookings && Array.isArray(result.bookings)) {
+                        bookings = result.bookings;
+                    }
+
+                    if (bookings.length === 0) {
+                        tableBody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-white-50">No booking history found.</td></tr>`;
+                        return;
+                    }
+
+                    bookings.forEach(booking => {
+                        const bookingId = booking.booking_id || booking.id;
+                        tableBody.innerHTML += `
+                            <tr>
+                                <td class="fw-bold">#${bookingId || 'N/A'}</td>
+                                <td>${booking.event_name || 'Event'}</td>
+                                <td>${booking.quantity || 0}</td>
+                                <td class="text-success fw-bold">RM ${booking.total_price || '0.00'}</td>
+                                <td><span class="badge bg-info text-dark">${booking.booking_status || 'confirmed'}</span></td>
+                                <td>
+                                    <button class="btn btn-outline-danger btn-sm" onclick="cancelBooking(${bookingId})">Cancel</button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                } else {
+                    tableBody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-danger">Failed to load booking history.</td></tr>`;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                tableBody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-danger">Error connecting to API server.</td></tr>`;
+            }
+        }
+
+        async function cancelBooking(bookingId) {
+            if (!confirm(`Are you sure you want to cancel booking #${bookingId}?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`http://localhost/EventTicketing/api/index.php/bookings/${bookingId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    alert("Booking cancelled successfully!");
+                    fetchBookingHistory(); // Muat semula senarai tempahan
+                } else {
+                    alert(result.message || "Failed to cancel booking.");
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert("Error connecting to server.");
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            window.location.href = 'login.html';
+        }
+
+        function goToHistory() {
+            window.location.href = 'history.html';
+        }
+
+        fetchBookingHistory();
+    </script>
+</body>
+</html>

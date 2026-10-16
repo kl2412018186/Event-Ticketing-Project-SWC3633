@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EventTicketing - Customer Dashboard</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            min-height: 100vh;
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+        }
+        .navbar-glass {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            color: #ffffff;
+            padding: 20px;
+            transition: transform 0.3s ease;
+        }
+        .glass-card:hover {
+            transform: translateY(-5px);
+        }
+        .btn-gradient {
+            background: linear-gradient(135deg, #00c6ff, #0072ff);
+            border: none;
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-weight: 600;
+            color: white;
+            transition: all 0.3s ease;
+        }
+        .btn-gradient:hover {
+            background: linear-gradient(135deg, #0072ff, #00c6ff);
+            box-shadow: 0 4px 15px rgba(0, 114, 255, 0.4);
+            color: white;
+        }
+        .logo-text {
+            font-size: 20px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #ff416c, #ff4b2b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-glass mb-4 py-3">
+        <div class="container">
+            <a class="navbar-brand logo-text" href="dashboard.html">🎟️ EventTicketing</a>
+            <div class="d-flex align-items-center gap-2">
+                <a href="profile.html" class="btn btn-outline-light btn-sm">Profile</a>
+                <a href="history.html" class="btn btn-outline-light btn-sm">Booking History</a>
+                <button class="btn btn-danger btn-sm" onclick="localStorage.clear(); window.location.href='login.html';">Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <div class="container mb-5">
+        <h2 class="mb-4 fw-bold">Available Events</h2>
+
+        <!-- Event List Grid -->
+        <div class="row" id="eventGrid">
+            <div class="col-12 text-center py-5 text-white-50">
+                Loading available events...
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const token = localStorage.getItem('token') || '';
+
+        async function fetchEvents() {
+            const eventGrid = document.getElementById('eventGrid');
+            try {
+                const response = await fetch('http://localhost/EventTicketing/api/index.php/events', {
+                    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }
+                });
+                const data = await response.json();
+                let events = Array.isArray(data) ? data : (data.events || data.data || []);
+
+                eventGrid.innerHTML = '';
+
+                if (events.length === 0) {
+                    eventGrid.innerHTML = `<div class="col-12 text-center py-5 text-white-50">No events available at the moment.</div>`;
+                    return;
+                }
+
+                events.forEach(e => {
+                    const eventId = e.event_id || e.id;
+                    const eventName = e.event_name || e.title;
+                    const eventDate = e.event_date || e.date;
+                    const eventDesc = e.description || 'No description provided.';
+                    const ticketPrice = parseFloat(e.ticket_price || e.price || 0).toFixed(2);
+
+                    eventGrid.innerHTML += `
+                        <div class="col-md-4 mb-4">
+                            <div class="glass-card h-100 d-flex flex-column justify-content-between">
+                                <div>
+                                    <h4 class="text-info fw-bold mb-2">${eventName}</h4>
+                                    <p class="text-white-50 small mb-2">📅 ${eventDate}</p>
+                                    <p class="text-white mb-3">${eventDesc}</p>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top border-secondary">
+                                    <span class="text-success fw-bold fs-5">RM ${ticketPrice}</span>
+                                    <div class="d-flex gap-2">
+                                        <button class="btn btn-outline-light btn-sm" onclick="viewDetails(${eventId})">Details</button>
+                                        <button class="btn btn-gradient btn-sm" onclick="goToBook(${eventId})">Book</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+            } catch (err) {
+                console.error('Error fetching events:', err);
+                eventGrid.innerHTML = `<div class="col-12 text-center py-5 text-danger">Failed to load events from server.</div>`;
+            }
+        }
+
+        // Fungsi untuk pergi ke halaman details.html
+        function viewDetails(eventId) {
+            window.location.href = `details.html?id=${eventId}`;
+        }
+
+        // Fungsi untuk pergi ke halaman book.html
+        function goToBook(eventId) {
+            if (!token) {
+                alert('Please log in first!');
+                window.location.href = 'login.html';
+                return;
+            }
+            window.location.href = `book.html?id=${eventId}`;
+        }
+
+        // Load events on page startup
+        fetchEvents();
+    </script>
+</body>
+</html>

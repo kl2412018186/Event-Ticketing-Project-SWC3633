@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EventTicketing - Login</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            min-height: 100vh;
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            color: #ffffff;
+            padding: 40px;
+            width: 100%;
+            max-width: 450px;
+        }
+        .btn-gradient {
+            background: linear-gradient(135deg, #00c6ff, #0072ff);
+            border: none;
+            border-radius: 8px;
+            padding: 10px;
+            font-weight: 600;
+            color: white;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+        .btn-gradient:hover {
+            background: linear-gradient(135deg, #0072ff, #00c6ff);
+            box-shadow: 0 4px 15px rgba(0, 114, 255, 0.4);
+            color: white;
+        }
+        .form-control-custom {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            border-radius: 8px;
+            padding: 12px;
+        }
+        .form-control-custom:focus {
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            border-color: #00c6ff;
+            box-shadow: none;
+        }
+        .logo-text {
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #ff416c, #ff4b2b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="glass-card">
+        <div class="text-center mb-4">
+            <h3 class="logo-text">🎟️ EventTicketing</h3>
+            <p class="text-white-50 small">Sign in to your account</p>
+        </div>
+
+        <div id="alertBox" class="alert d-none mb-3 py-2 text-center" role="alert"></div>
+
+        <form id="loginForm">
+            <div class="mb-3">
+                <label class="form-label text-white-50">Email Address</label>
+                <input type="email" id="loginEmail" class="form-control form-control-custom" placeholder="Enter your email" required>
+            </div>
+            <div class="mb-4">
+                <label class="form-label text-white-50">Password</label>
+                <input type="password" id="loginPassword" class="form-control form-control-custom" placeholder="Enter your password" required>
+            </div>
+            <button type="submit" class="btn btn-gradient mb-3">Login</button>
+            <div class="text-center">
+                <small class="text-white-50">Don't have an account? <a href="register.html" class="text-info text-decoration-none fw-bold">Register here</a></small>
+            </div>
+        </form>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            // Kosongkan storan lama setiap kali cuba log masuk
+            localStorage.clear();
+
+            const emailInput = document.getElementById('loginEmail').value.trim().toLowerCase();
+            const passwordInput = document.getElementById('loginPassword').value;
+            const alertBox = document.getElementById('alertBox');
+
+            try {
+                const response = await fetch('http://localhost/EventTicketing/api/index.php/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: emailInput, password: passwordInput })
+                });
+
+                const result = await response.json();
+                console.log("API Login Result:", result);
+
+                if (response.ok && (result.success || result.token || result.status === 'success')) {
+                    localStorage.setItem('token', result.token || result.access_token || '');
+                    localStorage.setItem('user', JSON.stringify(result.user || {}));
+
+                    alertBox.className = "alert alert-success mb-3 py-2 text-center";
+                    alertBox.textContent = "Login successful! Redirecting...";
+                    alertBox.classList.remove('d-none');
+
+                    // 1. Tentukan peranan berdasarkan tetapan emel (Penyelesaian Pantas & Pasti Berjaya)
+                    let targetPage = 'dashboard.html'; // lalai kepada customer
+
+                    if (emailInput.includes('admin')) {
+                        targetPage = 'admin_dashboard.html';
+                    } else if (emailInput.includes('organizer') || emailInput.includes('org')) {
+                        targetPage = 'organizer_dashboard.html';
+                    } else if (emailInput.includes('staff')) {
+                        targetPage = 'staff_dashboard.html';
+                    } else {
+                        // Jika emel biasa, semak pula jika API ada hantar data role
+                        let apiRole = (result.role || (result.user && result.user.role) || '').toLowerCase();
+                        if (apiRole === 'admin') targetPage = 'admin_dashboard.html';
+                        else if (apiRole === 'organizer' || apiRole === 'organiser') targetPage = 'organizer_dashboard.html';
+                        else if (apiRole === 'staff') targetPage = 'staff_dashboard.html';
+                    }
+
+                    console.log("Redirecting to target page:", targetPage);
+
+                    setTimeout(() => {
+                        window.location.href = targetPage;
+                    }, 1000);
+
+                } else {
+                    alertBox.className = "alert alert-danger mb-3 py-2 text-center";
+                    alertBox.textContent = result.message || "Invalid email or password.";
+                    alertBox.classList.remove('d-none');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alertBox.className = "alert alert-danger mb-3 py-2 text-center";
+                alertBox.textContent = "Server connection error.";
+                alertBox.classList.remove('d-none');
+            }
+        });
+    </script>
+</body>
+</html>
